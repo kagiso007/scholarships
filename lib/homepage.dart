@@ -1,35 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required});
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final note_stream =
-      Supabase.instance.client.from("scholarships").stream(primaryKey: ['id']);
-  List<String> urls = [];
+  final SupabaseClient _supabaseClient = Supabase.instance.client;
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> notes = [];
+  int _loadedItemsCount = 5;
+  static const int _itemsPerPage = 5;
+  double _minAverageMark = 0.0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> fetchUrls() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:5000/urls'));
-    if (response.statusCode == 200) {
-      setState(() {
-        urls = List<String>.from(json.decode(response.body));
-      });
-    } else {
-      throw Exception('Failed to load URLs');
+  void _onScroll() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      _loadMoreItems();
     }
+  }
+
+  void _loadMoreItems() {
+    setState(() {
+      _loadedItemsCount += _itemsPerPage;
+    });
   }
 
   void _launchURL(String url) async {
@@ -40,52 +44,107 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _setMinAverageMark(double mark) {
+    setState(() {
+      _minAverageMark = mark;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> _getFilteredNotes() {
+    return _supabaseClient
+        .from('scholarships')
+        .stream(primaryKey: ['id']).gte('average', 100 - _minAverageMark);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("scholarships"),
+        title: const Text("Scholarships and Bursaries"),
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: note_stream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final notes = snapshot.data!;
-          return ListView.builder(
-            itemCount: notes.length,
-            itemBuilder: (context, index) {
-              return Card(
-                elevation: 2.0,
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  title: Text(
-                    notes[index]['scholarships']!,
-                    style: const TextStyle(
-                      color: Colors.teal,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.0,
-                    ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('Minimum Average Mark:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Slider(
+                    value: _minAverageMark,
+                    min: 0,
+                    max: 100,
+                    divisions: 100,
+                    label: _minAverageMark.round().toString(),
+                    onChanged: (double value) {
+                      _setMinAverageMark(value);
+                    },
                   ),
-                  trailing: const Icon(
-                    Icons.open_in_new,
-                    color: Colors.teal,
-                  ),
-                  onTap: () {
-                    _launchURL(notes[index]['scholarship_url']!);
-                  },
                 ),
-              );
-            },
-          );
-        },
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _getFilteredNotes(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                notes = snapshot.data!;
+                final visibleNotes = notes.take(_loadedItemsCount).toList();
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: visibleNotes.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == visibleNotes.length) {
+                      return Visibility(
+                        visible: _loadedItemsCount < notes.length,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(
+                            child: ElevatedButton(
+                              onPressed: _loadMoreItems,
+                              child: const Text("View More"),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return Card(
+                      elevation: 2.0,
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 8.0),
+                        title: Text(
+                          visibleNotes[index]['scholarships']!,
+                          style: const TextStyle(
+                            color: Colors.teal,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.open_in_new,
+                          color: Colors.teal,
+                        ),
+                        onTap: () {
+                          _launchURL(visibleNotes[index]['scholarship_url']!);
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -103,6 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: [
                   TextFormField(
                     controller: nameController,
+                    decoration:
+                        const InputDecoration(hintText: "Name of Scholarship"),
                     onFieldSubmitted: (value) async {
                       await Supabase.instance.client
                           .from('scholarships')
@@ -112,6 +173,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   TextFormField(
                     controller: urlController,
+                    decoration: const InputDecoration(
+                        hintText: "Scholarship Website Link"),
                     onFieldSubmitted: (value) async {
                       await Supabase.instance.client
                           .from('scholarships')
@@ -125,7 +188,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           .from('scholarships')
                           .insert({
                         'scholarships': nameController.text,
-                        'scholarship_url': urlController.text
+                        'scholarship_url': urlController.text,
                       });
                       Navigator.of(context).pop();
                     },
@@ -141,13 +204,3 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
-
-//fetch url via python scrapping
-/*itemCount: urls.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(urls[index]),
-                onTap: () => print('Tapped on ${urls[index]}'),
-              );
-            },*/

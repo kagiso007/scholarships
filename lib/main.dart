@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:scholarships/homepage.dart';
+import 'package:scholarships/inputpage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -18,12 +18,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'scholarships',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: const WelcomePage(),
       debugShowCheckedModeBanner: false,
     );
   }

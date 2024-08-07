@@ -1,31 +1,35 @@
 import requests
-
 from bs4 import BeautifulSoup
-import pandas as pd
-import time
+import csv
 
-# URL of the website to scrape
-url = "https://www.imdb.com/chart/top"
+# URL of the page to scrape
+url = 'https://damelinconnect.co.za/bursaries-in-south-africa/?gad_source=1&gclid=CjwKCAjwhvi0BhA4EiwAX25uj4-tOK9vi_XsNS_hkFk8MEY_7j-phjS6EwJ1NX_gElm2EXfAVqVzdxoCrM8QAvD_BwE'
 
-# Send an HTTP GET request to the website
+# Make a GET request to fetch the raw HTML content
 response = requests.get(url)
 
-# Parse the HTML code using BeautifulSoup
+# Parse the content with BeautifulSoup
 soup = BeautifulSoup(response.content, 'html.parser')
 
-# Extract the relevant information from the HTML code
-movies = []
-for row in soup.select('tbody.lister-list tr'):
-    title = row.find('td', class_='titleColumn').find('a').get_text()
-    year = row.find('td', class_='titleColumn').find('span', class_='secondaryInfo').get_text()[1:-1]
-    rating = row.find('td', class_='ratingColumn imdbRating').find('strong').get_text()
-    movies.append([title, year, rating])
+# Open a CSV file to write the results
+with open('damelin_bursaries.csv', mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    # Write the header
+    writer.writerow(['Title', 'Link'])
 
-# Store the information in a pandas dataframe
-df = pd.DataFrame(movies, columns=['Title', 'Year', 'Rating'])
+    # Iterate over each bursary entry and extract the details
+    for entry in soup.find_all('section', class_='elementor-section'):
+        # Extract the title
+        title_element = entry.find('h2')
+        if not title_element:
+            continue
+        title = title_element.get_text(strip=True)
 
-# Add a delay between requests to avoid overwhelming the website with requests
-time.sleep(1)
+        # Extract the link
+        link_element = entry.find('a')
+        link = link_element['href'] if link_element else 'No Link'
 
-# Export the data to a CSV file
-df.to_csv('top-rated-movies.csv', index=False)
+        # Write the details to the CSV file
+        writer.writerow([title, description, link])
+
+print('Data has been written to damelin_bursaries.csv')
