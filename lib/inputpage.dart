@@ -1,72 +1,138 @@
 import 'package:flutter/material.dart';
 import 'package:scholarships/homepage.dart';
 
-class WelcomePage extends StatefulWidget {
-  const WelcomePage({super.key});
+class EnterMarksPage extends StatefulWidget {
+  const EnterMarksPage({super.key});
 
   @override
-  _WelcomePageState createState() => _WelcomePageState();
+  State<EnterMarksPage> createState() => _EnterMarksPageState();
 }
 
-class _WelcomePageState extends State<WelcomePage> {
-  final TextEditingController mathematicsController = TextEditingController();
-  final TextEditingController physicsController = TextEditingController();
-  final TextEditingController EnglishController = TextEditingController();
-  final TextEditingController accountingController = TextEditingController();
-  final TextEditingController nationalityController = TextEditingController();
-  final TextEditingController averagemarkController = TextEditingController();
-
-  void _navigateToHomePage() {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => const MyHomePage(),
-    ));
-  }
+class _EnterMarksPageState extends State<EnterMarksPage> {
+  final TextEditingController _minAverageMarkController =
+      TextEditingController(text: '0.0');
+  final TextEditingController _minMathMarkController =
+      TextEditingController(text: '0.0');
+  final TextEditingController _minPhysicsMarkController =
+      TextEditingController(text: '0.0');
+  final TextEditingController _minAccountingMarkController =
+      TextEditingController(text: '0.0');
+  final TextEditingController _minEnglishMarkController =
+      TextEditingController(text: '0.0');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Welcome"),
+        title: const Text("please Enter your Marks"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: mathematicsController,
-              decoration: const InputDecoration(labelText: 'mathematics'),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('Minimum Average Mark:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minAverageMarkController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "0.0"),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: physicsController,
-              decoration: const InputDecoration(labelText: 'physical sciences'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('Mathematics:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minMathMarkController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "0.0"),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: EnglishController,
-              decoration: const InputDecoration(labelText: 'English'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('Physical Science:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minPhysicsMarkController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "0.0"),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: accountingController,
-              decoration: const InputDecoration(labelText: 'accounting'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('Accounting:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minAccountingMarkController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "0.0"),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: nationalityController,
-              decoration: const InputDecoration(labelText: 'nationality'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Text('English:'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minEnglishMarkController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "0.0"),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: averagemarkController,
-              decoration: const InputDecoration(labelText: 'average mark'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // You can process the inputs here if needed
-                _navigateToHomePage();
-              },
-              child: const Text('Submit'),
-            ),
-          ],
-        ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Navigate to the View Scholarships Page with the entered marks
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Homepage(
+                    minAverageMark:
+                        double.tryParse(_minAverageMarkController.text) ?? 0.0,
+                    minMathMark:
+                        double.tryParse(_minMathMarkController.text) ?? 0.0,
+                    minPhysicsMark:
+                        double.tryParse(_minPhysicsMarkController.text) ?? 0.0,
+                    minAccountingMark:
+                        double.tryParse(_minAccountingMarkController.text) ??
+                            0.0,
+                    minEnglishMark:
+                        double.tryParse(_minEnglishMarkController.text) ?? 0.0,
+                  ),
+                ),
+              );
+            },
+            child: const Text("View Scholarships"),
+          ),
+        ],
       ),
     );
   }
